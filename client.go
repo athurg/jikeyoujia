@@ -1,6 +1,7 @@
 package jikeyoujia
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -13,16 +14,33 @@ import (
 type Client struct {
 	Debug bool
 	Token string
+
+	Latitude  string
+	Longitude string
 }
 
 const BaseURI = "http://jikeyoujia.cn:9009/flsi"
 
+const UserAgent = "yxhd/3.1.1 (iPhone; iOS 10.3.3; Scale/2.00)" //yxhd即壹线互动，是吉客优家的开发商
+const DefaultLatitude = "30.5347256"
+const DefaultLongitude = "104.066828"
+
 func New() *Client {
-	return &Client{}
+	return &Client{
+		Latitude:  DefaultLatitude,
+		Longitude: DefaultLongitude,
+	}
 }
 
 func (client *Client) EnableDebug() {
 	client.Debug = true
+}
+
+func (client *Client) DeviceUDID() string {
+	latitudeSum := md5.Sum([]byte(client.Latitude))
+	longitudeSum := md5.Sum([]byte(client.Longitude))
+
+	return fmt.Sprintf("%x%x", latitudeSum, longitudeSum)
 }
 
 //通过基础响应判断是否请求失败的接口
@@ -59,14 +77,14 @@ func (client *Client) request(method, path string, header http.Header, data url.
 	req.Header.Add("pdaos", "10.3.3")
 	req.Header.Add("pdadate", time.Now().Format("2006-01-02 15:04:05"))
 
-	req.Header.Add("User-Agent", "yxhd/3.1.1 (iPhone; iOS 10.3.3; Scale/2.00)") //yxhd即壹线互动，是吉客优家的开发商
-	req.Header.Add("deviceudid", "2a0c961bcbb62f129b207623eb298e80cd567d5320229aff0b598061f456b6be")
+	req.Header.Add("User-Agent", UserAgent)
+	req.Header.Add("deviceudid", client.DeviceUDID())
 
 	req.Header.Add("apptype", "0")
 	req.Header.Add("appversion", "3.1.1")
 
-	req.Header.Add("latitude", "30.554498")
-	req.Header.Add("longitude", "104.076691")
+	req.Header.Add("latitude", client.Latitude)
+	req.Header.Add("longitude", client.Longitude)
 
 	req.Header.Add("cityid", "1")
 	req.Header.Add("city", "高新南区")
