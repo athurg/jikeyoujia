@@ -28,7 +28,7 @@ func (client *Client) UserSign(username string) error {
 
 	if client.Debug {
 		b, _ := json.MarshalIndent(info, "", "\t")
-		fmt.Println("登陆响应：\n", string(b))
+		fmt.Println("签到响应：\n", string(b))
 	}
 
 	return nil
