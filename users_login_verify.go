@@ -59,7 +59,7 @@ type UserLoginResponse struct {
 	UnreadAnswerreply string `json:"unread_answerreply"`
 }
 
-func (client *Client) Login(username, password string) error {
+func (client *Client) Login(username, password string) (*UserLoginResponse, error) {
 	var info UserLoginResponse
 
 	data := url.Values{}
@@ -68,7 +68,7 @@ func (client *Client) Login(username, password string) error {
 
 	err := client.request("POST", "/users!loginverify.action", nil, data, &info)
 	if err != nil {
-		return fmt.Errorf("请求错误:%s", err)
+		return nil, fmt.Errorf("请求错误:%s", err)
 	}
 
 	if client.Debug {
@@ -78,5 +78,5 @@ func (client *Client) Login(username, password string) error {
 
 	client.Token = info.Token
 
-	return nil
+	return &info, nil
 }
