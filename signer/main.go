@@ -29,6 +29,14 @@ func main() {
 	log.Printf("登陆信息: %+v", loginInfo)
 	log.Println("签到前分数:", loginInfo.Score)
 
+	log.Println("获取签到清单")
+	scoreList, err := client.UserScoreList(username)
+	if err != nil {
+		log.Fatalf("%s\n", err)
+		return
+	}
+	log.Printf("签到清单信息: %+v", scoreList)
+
 	log.Println("签到")
 	signInfo, err := client.UserSign(username)
 	if err != nil {
