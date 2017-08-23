@@ -1,9 +1,11 @@
 package jikeyoujia
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -112,7 +114,9 @@ func (client *Client) request(method, path string, header http.Header, data url.
 	}
 	defer resp.Body.Close()
 
-	//如果响应是未知的，需要直接将结果打印出来，以便确定格式
+	var reader io.Reader = resp.Body
+
+	//如果响应格式未知，需要直接将结果打印出来(以便确定格式)并直接返回
 	if respInfo == nil {
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
@@ -123,7 +127,18 @@ func (client *Client) request(method, path string, header http.Header, data url.
 		return nil
 	}
 
-	err = json.NewDecoder(resp.Body).Decode(respInfo)
+	//调试模式，把返回的数据打出来
+	if client.Debug {
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("读取错误: %s", err)
+		}
+
+		fmt.Println("请求返回：", string(b))
+		reader = bytes.NewBuffer(b)
+	}
+
+	err = json.NewDecoder(reader).Decode(respInfo)
 	if err != nil {
 		return fmt.Errorf("读取错误: %s", err)
 	}

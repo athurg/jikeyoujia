@@ -4,13 +4,13 @@ package main
 import (
 	".."
 
-	"fmt"
+	"log"
 	"os"
 )
 
 func main() {
 	if len(os.Args) < 3 {
-		fmt.Fprintf(os.Stderr, "用法: %s 用户名 密码\n", os.Args[0])
+		log.Fatalf("用法: %s 用户名 密码\n", os.Args[0])
 		return
 	}
 
@@ -20,28 +20,30 @@ func main() {
 	client := jikeyoujia.New()
 	client.EnableDebug()
 
-	fmt.Println("登陆")
+	log.Println("登陆")
 	loginInfo, err := client.Login(username, password)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		log.Fatalf("%s\n", err)
 		return
 	}
+	log.Printf("登陆信息: %+v", loginInfo)
+	log.Println("签到前分数:", loginInfo.Score)
 
-	fmt.Println("签到前分数:", loginInfo.Score)
-
-	fmt.Println("签到")
-	err = client.UserSign(username)
+	log.Println("签到")
+	signInfo, err := client.UserSign(username)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		log.Fatalf("%s\n", err)
 		return
 	}
+	log.Printf("签到信息: %+v", signInfo)
 
-	fmt.Println("获取签到后分数")
+	log.Println("获取签到后分数")
 	detailInfo, err := client.UserDetail(username)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		log.Fatalf("%s\n", err)
 		return
 	}
 
-	fmt.Println("签到后分数:", detailInfo.Score)
+	log.Printf("签到详情信息: %+v", detailInfo)
+	log.Println("签到后分数:", detailInfo.Score)
 }

@@ -2,7 +2,6 @@ package jikeyoujia
 
 import (
 	"crypto/md5"
-	"encoding/json"
 	"fmt"
 	"net/url"
 )
@@ -69,11 +68,6 @@ func (client *Client) Login(username, password string) (*UserLoginResponse, erro
 	err := client.request("POST", "/users!loginverify.action", nil, data, &info)
 	if err != nil {
 		return nil, fmt.Errorf("请求错误:%s", err)
-	}
-
-	if client.Debug {
-		b, _ := json.MarshalIndent(info, "", "\t")
-		fmt.Println("登陆响应：\n", string(b))
 	}
 
 	client.Token = info.Token
