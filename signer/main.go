@@ -12,7 +12,7 @@ import (
 
 func main() {
 	if len(os.Args) < 4 {
-		log.Fatalf("用法: %s 用户名 密码 微信通知用户\n", os.Args[0])
+		log.Fatalf("用法: %s 用户名 密码 微信通知用户的OpenID或备注名\n", os.Args[0])
 		return
 	}
 
@@ -26,7 +26,7 @@ func main() {
 	log.Println("登陆")
 	loginInfo, err := client.Login(username, password)
 	if err != nil {
-		Notify(toUser, "吉客优家登陆失败: "+err.Error())
+		ErrorNotify(toUser, "吉客优家登陆失败: "+err.Error())
 		log.Fatalf("%s\n", err)
 	}
 
@@ -36,7 +36,7 @@ func main() {
 	log.Println("获取签到清单")
 	scoreList, err := client.UserScoreList(username)
 	if err != nil {
-		Notify(toUser, "吉客优家获取签到单失败: "+err.Error())
+		ErrorNotify(toUser, "吉客优家获取签到单失败: "+err.Error())
 		log.Fatalf("%s\n", err)
 	}
 	log.Printf("签到清单信息: %+v", scoreList)
@@ -44,7 +44,7 @@ func main() {
 	log.Println("签到")
 	signInfo, err := client.UserSign(username)
 	if err != nil {
-		Notify(toUser, "吉客优家签到失败: "+err.Error())
+		ErrorNotify(toUser, "吉客优家签到失败: "+err.Error())
 		log.Fatalf("%s\n", err)
 	}
 
@@ -53,23 +53,38 @@ func main() {
 	log.Println("获取签到后分数")
 	detailInfo, err := client.UserDetail(username)
 	if err != nil {
-		Notify(toUser, "吉客优家获取签到后分数失败: "+err.Error())
+		ErrorNotify(toUser, "吉客优家获取签到后分数失败: "+err.Error())
 		log.Fatalf("%s\n", err)
 	}
 
 	log.Printf("签到详情信息: %+v", detailInfo)
 	log.Println("签到后分数:", detailInfo.Score)
 
-	Notify(toUser, "吉客优家签到成功, 分数变化"+loginInfo.Score+" => "+detailInfo.Score)
+	Notify(toUser, loginInfo.Score, detailInfo.Score)
 }
 
-func Notify(toUser, message string) {
+func ErrorNotify(toUser, message string) {
 	log.Println("发送通知", message)
 	getParams := url.Values{}
 	getParams.Set("touser", toUser)
 	getParams.Set("content", message)
 
 	_, err := http.Get("http://localhost:8083/default_notify?" + getParams.Encode())
+	if err != nil {
+		log.Println("微信通知失败", err)
+	}
+}
+
+func Notify(toUser, before, after string) {
+	getParams := url.Values{}
+	getParams.Set("touser", toUser)
+	getParams.Set("templateid", "cdX0mJXSGFrzQMKvcWf3Lh3hzAfbdo5APiTqxgL2FCk")
+
+	getParams.Set("type", "#55CC55吉客优家")
+	getParams.Set("before", "#AAAAAA"+before)
+	getParams.Set("after", "#6666FF"+after)
+
+	_, err := http.Get("http://localhost:8080/default_notify?" + getParams.Encode())
 	if err != nil {
 		log.Println("微信通知失败", err)
 	}
