@@ -2,7 +2,7 @@
 package main
 
 import (
-	".."
+	"jikeyoujia"
 
 	"log"
 	"net/http"
@@ -69,7 +69,7 @@ func ErrorNotify(toUser, message string) {
 	getParams.Set("touser", toUser)
 	getParams.Set("content", message)
 
-	_, err := http.Get("http://localhost:8083/default_notify?" + getParams.Encode())
+	_, err := http.Get("http://host.docker.internal:8083/default_notify?" + getParams.Encode())
 	if err != nil {
 		log.Println("微信通知失败", err)
 	}
@@ -84,7 +84,7 @@ func Notify(toUser, before, after string) {
 	getParams.Set("before", "#AAAAAA"+before)
 	getParams.Set("after", "#6666FF"+after)
 
-	_, err := http.Get("http://localhost:8080/default_notify?" + getParams.Encode())
+	_, err := http.Get("http://host.docker.internal:8083/default_notify?" + getParams.Encode())
 	if err != nil {
 		log.Println("微信通知失败", err)
 	}
