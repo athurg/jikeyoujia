@@ -4,88 +4,86 @@ package main
 import (
 	"jikeyoujia"
 
-	"log"
-	"net/http"
-	"net/url"
+	"context"
+	"encoding/json"
+	"fmt"
 	"os"
+
+	"github.com/tencentyun/scf-go-lib/cloudfunction"
 )
 
-func main() {
-	if len(os.Args) < 4 {
-		log.Fatalf("用法: %s 用户名 密码 微信通知用户的OpenID或备注名\n", os.Args[0])
-		return
+// 腾讯云函数触发事件
+type ScfEvent struct {
+	Message string
+}
+
+func HandleRequest(ctx context.Context, e ScfEvent) error {
+	var param map[string]string
+	err := json.Unmarshal([]byte(e.Message), &param)
+	if err != nil {
+		return fmt.Errorf("传入参数不合法: %s", err)
 	}
 
-	username := os.Args[1]
-	password := os.Args[2]
-	toUser := os.Args[3]
+	return doSign(param["user"], param["pass"])
+}
 
+func doSign(username, password string) error {
 	client := jikeyoujia.New()
 	client.EnableDebug()
 
-	log.Println("登陆")
+	fmt.Println("登陆用户", username)
 	loginInfo, err := client.Login(username, password)
 	if err != nil {
-		ErrorNotify(toUser, "吉客优家登陆失败: "+err.Error())
-		log.Fatalf("%s\n", err)
+		return err
 	}
 
-	log.Printf("登陆信息: %+v", loginInfo)
-	log.Println("签到前分数:", loginInfo.Score)
+	fmt.Printf("登陆信息: %+v", loginInfo)
+	fmt.Println("签到前分数:", loginInfo.Score)
 
-	log.Println("获取签到清单")
+	fmt.Println("获取签到清单")
 	scoreList, err := client.UserScoreList(username)
 	if err != nil {
-		ErrorNotify(toUser, "吉客优家获取签到单失败: "+err.Error())
-		log.Fatalf("%s\n", err)
+		return err
 	}
-	log.Printf("签到清单信息: %+v", scoreList)
+	fmt.Printf("签到清单信息: %+v", scoreList)
 
-	log.Println("签到")
+	fmt.Println("签到")
 	signInfo, err := client.UserSign(username)
 	if err != nil {
-		ErrorNotify(toUser, "吉客优家签到失败: "+err.Error())
-		log.Fatalf("%s\n", err)
+		return err
 	}
 
-	log.Printf("签到信息: %+v", signInfo)
+	fmt.Printf("签到信息: %+v", signInfo)
 
-	log.Println("获取签到后分数")
+	fmt.Println("获取签到后分数")
 	detailInfo, err := client.UserDetail(username)
 	if err != nil {
-		ErrorNotify(toUser, "吉客优家获取签到后分数失败: "+err.Error())
-		log.Fatalf("%s\n", err)
+		return err
 	}
 
-	log.Printf("签到详情信息: %+v", detailInfo)
-	log.Println("签到后分数:", detailInfo.Score)
+	fmt.Printf("签到详情信息: %+v", detailInfo)
+	fmt.Println("签到后分数:", detailInfo.Score)
 
-	Notify(toUser, loginInfo.Score, detailInfo.Score)
+	return nil
 }
 
-func ErrorNotify(toUser, message string) {
-	log.Println("发送通知", message)
-	getParams := url.Values{}
-	getParams.Set("touser", toUser)
-	getParams.Set("content", message)
-
-	_, err := http.Get("http://host.docker.internal:8083/default_notify?" + getParams.Encode())
-	if err != nil {
-		log.Println("微信通知失败", err)
+func main() {
+	//检测是否运行于腾讯云函数环境
+	_, ok := os.LookupEnv("TENCENTCLOUD_RUNENV")
+	if ok {
+		cloudfunction.Start(HandleRequest)
+		return
 	}
-}
 
-func Notify(toUser, before, after string) {
-	getParams := url.Values{}
-	getParams.Set("touser", toUser)
-	getParams.Set("templateid", "cdX0mJXSGFrzQMKvcWf3Lh3hzAfbdo5APiTqxgL2FCk")
+	//其他情况直接从命令行获取参数运行
+	if len(os.Args) < 3 {
+		fmt.Printf("用法: %s 用户名 密码\n", os.Args[0])
+		return
+	}
 
-	getParams.Set("type", "#55CC55吉客优家")
-	getParams.Set("before", "#AAAAAA"+before)
-	getParams.Set("after", "#6666FF"+after)
-
-	_, err := http.Get("http://host.docker.internal:8083/default_notify?" + getParams.Encode())
+	err := doSign(os.Args[1], os.Args[2])
 	if err != nil {
-		log.Println("微信通知失败", err)
+		fmt.Printf("%s", err)
+		return
 	}
 }
