@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/tencentyun/scf-go-lib/cloudfunction"
 )
 
@@ -17,7 +18,7 @@ type ScfEvent struct {
 	Message string
 }
 
-func HandleRequest(ctx context.Context, e ScfEvent) error {
+func ScfHandle(ctx context.Context, e ScfEvent) error {
 	var param map[string]string
 	err := json.Unmarshal([]byte(e.Message), &param)
 	if err != nil {
@@ -25,6 +26,10 @@ func HandleRequest(ctx context.Context, e ScfEvent) error {
 	}
 
 	return doSign(param["user"], param["pass"])
+}
+
+func LambdaHandle() error {
+	return doSign(os.Getenv("USER"), os.Getenv("PASS"))
 }
 
 func doSign(username, password string) error {
@@ -71,8 +76,13 @@ func main() {
 	//检测是否运行于腾讯云函数环境
 	_, ok := os.LookupEnv("TENCENTCLOUD_RUNENV")
 	if ok {
-		cloudfunction.Start(HandleRequest)
+		cloudfunction.Start(ScfHandle)
 		return
+	}
+
+	_, ok = os.LookupEnv("AWS_LAMBDA_RUNTIME_API")
+	if ok {
+		lambda.Start(LambdaHandle)
 	}
 
 	//其他情况直接从命令行获取参数运行
