@@ -1,0 +1,8 @@
+# github.com/aws/aws-lambda-go v1.8.0
+github.com/aws/aws-lambda-go/lambda
+github.com/aws/aws-lambda-go/lambda/messages
+github.com/aws/aws-lambda-go/lambdacontext
+# github.com/tencentyun/scf-go-lib v0.0.0-20181220070952-2ec9ebdbf1f0
+github.com/tencentyun/scf-go-lib/cloudfunction
+github.com/tencentyun/scf-go-lib/cloudfunction/messages
+github.com/tencentyun/scf-go-lib/functioncontext
